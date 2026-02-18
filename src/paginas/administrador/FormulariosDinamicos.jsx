@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Plus, Search, FileText, ChevronDown, ChevronUp,
-  Settings2, CheckCircle2, X
+  Settings2, CheckCircle2, X, Trash2, Save
 } from 'lucide-react';
 
 const FormulariosDinamicos = () => {
@@ -9,20 +9,54 @@ const FormulariosDinamicos = () => {
   const [filtroActivo, setFiltroActivo] = useState('Todos');
   const [formularioExpandido, setFormularioExpandido] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // ESTADOS PARA EDICIÓN DE CAMPOS
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [formEnEdicion, setFormEnEdicion] = useState(null);
+  const [nuevoCampoNombre, setNuevoCampoNombre] = useState('');
 
-  const formulariosIniciales = [
+  const [formularios, setFormularios] = useState([
     { id: 1, nombre: 'Datos del Solicitante', desc: 'Informacion personal del campesino o representante', estado: 'Activo', tipo: 'Todos', campos: '7 campos', detalles: ['Nombre Completo', 'Cédula', 'Fecha de Nacimiento', 'Género', 'Etnia', 'Discapacidad', 'Ubicación'] },
     { id: 2, nombre: 'Datos Productivos', desc: 'Informacion sobre la actividad productiva del solicitante', estado: 'Activo', tipo: 'Todos', campos: '4 campos', detalles: ['Tipo de Cultivo', 'Hectáreas', 'Propiedad de tierra', 'Asistencia técnica'] },
     { id: 3, nombre: 'Solicitud de Capacitacion', desc: 'Campos especificos para solicitudes de capacitacion tecnica', estado: 'Activo', tipo: 'Capacitacion', campos: '5 campos', detalles: ['Área de interés', 'Nivel de estudios', 'Horario disponible', 'Experiencia previa', 'Certificaciones'] },
     { id: 4, nombre: 'Proyecto Productivo', desc: 'Campos especificos para registro de proyectos productivos', estado: 'Activo', tipo: 'Proyecto', campos: '5 campos', detalles: ['Nombre del proyecto', 'Presupuesto estimado', 'Duración', 'Aliados', 'Impacto social'] }
-  ];
+  ]);
 
   // Lógica de filtrado
-  const formulariosFiltrados = formulariosIniciales.filter(f => {
+  const formulariosFiltrados = formularios.filter(f => {
     const coincideBusqueda = f.nombre.toLowerCase().includes(busqueda.toLowerCase());
     const coincideFiltro = filtroActivo === 'Todos' || f.tipo === filtroActivo;
     return coincideBusqueda && coincideFiltro;
   });
+
+  // FUNCIONES DE EDICIÓN
+  const abrirEditor = (form) => {
+    setFormEnEdicion({...form});
+    setShowEditModal(true);
+  };
+
+  const eliminarCampo = (campoNombre) => {
+    const nuevosDetalles = formEnEdicion.detalles.filter(c => c !== campoNombre);
+    setFormEnEdicion({...formEnEdicion, detalles: nuevosDetalles});
+  };
+
+  const añadirCampo = () => {
+    if(!nuevoCampoNombre.trim()) return;
+    setFormEnEdicion({
+      ...formEnEdicion, 
+      detalles: [...formEnEdicion.detalles, nuevoCampoNombre.trim()]
+    });
+    setNuevoCampoNombre('');
+  };
+
+  const guardarCambiosCampos = () => {
+    setFormularios(formularios.map(f => 
+      f.id === formEnEdicion.id 
+        ? { ...formEnEdicion, campos: `${formEnEdicion.detalles.length} campos` } 
+        : f
+    ));
+    setShowEditModal(false);
+  };
 
   return (
     <div className="p-8 bg-[#f9fafb] min-h-screen relative">
@@ -48,9 +82,9 @@ const FormulariosDinamicos = () => {
 
       {/* Tarjetas de Estadísticas */}
       <div className="grid grid-cols-3 gap-6 mb-8">
-        <StatCard value={formulariosIniciales.length} label="Formularios" icon={<FileText className="text-green-600" size={24} />} />
-        <StatCard value="21" label="Campos totales" icon={<Settings2 className="text-orange-400" size={24} />} />
-        <StatCard value="4" label="Formularios activos" icon={<CheckCircle2 className="text-green-500" size={24} />} />
+        <StatCard value={formularios.length} label="Formularios" icon={<FileText className="text-green-600" size={24} />} />
+        <StatCard value={formularios.reduce((acc, f) => acc + f.detalles.length, 0)} label="Campos totales" icon={<Settings2 className="text-orange-400" size={24} />} />
+        <StatCard value={formularios.filter(f => f.estado === 'Activo').length} label="Formularios activos" icon={<CheckCircle2 className="text-green-500" size={24} />} />
       </div>
 
       {/* Filtros y Botón */}
@@ -60,7 +94,7 @@ const FormulariosDinamicos = () => {
             <button 
               key={f}
               onClick={() => setFiltroActivo(f)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filtroActivo === f ? 'bg-gray-100 text-gray-800 shadow-sm border border-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filtroActivo === f ? 'bg-white text-gray-800 shadow-sm border border-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {f}
             </button>
@@ -74,7 +108,7 @@ const FormulariosDinamicos = () => {
         </button>
       </div>
 
-      {/* Lista de Formularios con Acordeón */}
+      {/* Lista de Formularios */}
       <div className="space-y-3">
         {formulariosFiltrados.map((form) => (
           <div key={form.id} className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
@@ -101,7 +135,7 @@ const FormulariosDinamicos = () => {
               </div>
             </div>
 
-            {/* Contenido Expandible (Detalles del Formulario) */}
+            {/* Contenido Expandible */}
             {formularioExpandido === form.id && (
               <div className="px-16 pb-6 pt-2 border-t border-gray-50 bg-gray-50/50 animate-in slide-in-from-top-2 duration-300">
                 <p className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Campos Configurados:</p>
@@ -112,20 +146,79 @@ const FormulariosDinamicos = () => {
                       {campo}
                     </span>
                   ))}
-                  <button className="text-[#39a900] text-xs font-bold hover:underline ml-2">+ Editar campos</button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); abrirEditor(form); }}
+                    className="text-[#39a900] text-xs font-bold hover:underline ml-2"
+                  >
+                    + Editar campos
+                  </button>
                 </div>
               </div>
             )}
           </div>
         ))}
-        {formulariosFiltrados.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
-            <p className="text-gray-400 text-sm italic">No se encontraron formularios con esa búsqueda.</p>
-          </div>
-        )}
       </div>
 
-      {/* MODAL PARA NUEVO FORMULARIO */}
+      {/* MODAL PARA EDITAR CAMPOS (EL QUE PEDISTE) */}
+      {showEditModal && formEnEdicion && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h2 className="font-bold text-gray-800">Gestionar Campos</h2>
+                <p className="text-[10px] text-gray-400 uppercase font-black">{formEnEdicion.nombre}</p>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
+            </div>
+            
+            <div className="p-6">
+              {/* Añadir Nuevo Campo */}
+              <div className="flex gap-2 mb-6">
+                <input 
+                  type="text" 
+                  value={nuevoCampoNombre}
+                  onChange={(e) => setNuevoCampoNombre(e.target.value)}
+                  placeholder="Nombre del nuevo campo..."
+                  className="flex-1 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-green-500"
+                />
+                <button 
+                  onClick={añadirCampo}
+                  className="bg-green-50 text-green-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-100 transition-colors"
+                >
+                  Añadir
+                </button>
+              </div>
+
+              {/* Lista de Campos Actuales */}
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                {formEnEdicion.detalles.map((campo, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 group">
+                    <span className="text-sm text-gray-700 font-medium">{campo}</span>
+                    <button 
+                      onClick={() => eliminarCampo(campo)}
+                      className="text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 rounded-b-2xl flex gap-3">
+              <button onClick={() => setShowEditModal(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
+              <button 
+                onClick={guardarCambiosCampos}
+                className="flex-1 bg-[#39a900] text-white py-2 rounded-lg text-sm font-bold shadow-md flex items-center justify-center gap-2"
+              >
+                <Save size={16}/> Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA NUEVO FORMULARIO (TAL CUAL LO TENÍAS) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">

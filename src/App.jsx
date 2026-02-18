@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
@@ -16,7 +15,8 @@ import PanelAdministrador from "./paginas/administrador/PanelAdministrador";
 import Solicitudes from "./paginas/administrador/Solicitudes";
 import RolesPermisos from "./paginas/administrador/RolesPermisos";
 import Auditoria from "./paginas/administrador/Auditoria";
-import ConfiguracionSistema from "./paginas/administrador/ConfiguracionSistema";
+import ConfiguracionSistema from "./paginas/administrador/ConfiguracionSistema"; // Para Documentos
+import FormulariosDinamicos from "./paginas/administrador/FormulariosDinamicos"; // Para Formularios
 import UsuariosAdmin from "./componentes/Admin/UsuariosAdmin";
 import DetalleSolicitud from "./paginas/administrador/DetalleSolicitud";
 
@@ -25,8 +25,6 @@ import PanelCampesino from "./paginas/campesino/PanelCampesino";
 import NuevaSolicitud from "./paginas/campesino/NuevaSolicitud";
 import SeguimientoSolicitud from "./paginas/campesino/SeguimientoSolicitud";
 import DetalleSolicitudCampesino from "./paginas/campesino/DetalleSolicitudCampesino";
-
-
 
 function App() {
   const [notificaciones, setNotificaciones] = useState([]);
@@ -43,13 +41,13 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          {/* RUTA PÚBLICA */}
+          {/* 1. RUTA PÚBLICA */}
           <Route path="/login" element={<IniciarSesion />} />
 
-          {/* RUTAS PRIVADAS (token) */}
+          {/* 2. RUTAS PRIVADAS */}
           <Route element={<RutaProtegida />}>
 
-            {/* ADMIN: SOLO ADMIN */}
+            {/* SECCIÓN ADMINISTRADOR */}
             <Route element={<RutaConRol rolesPermitidos={["ADMIN"]} />}>
               <Route path="/admin" element={<ContenedorPagina notificaciones={notificaciones} />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -59,13 +57,22 @@ function App() {
                 <Route path="roles-permisos" element={<RolesPermisos />} />
                 <Route path="auditoria" element={<Auditoria />} />
                 <Route path="usuarios" element={<UsuariosAdmin />} />
-                <Route path="configuracion" element={<ConfiguracionSistema />} />
-                <Route path="configuracion/documentos" element={<ConfiguracionSistema />} />
-                <Route path="configuracion/formularios" element={<ConfiguracionSistema />} />
+
+                {/* --- GRUPO DE CONFIGURACIÓN --- */}
+                <Route path="configuracion">
+                  {/* Redirección por defecto al entrar a la sección */}
+                  <Route index element={<Navigate to="documentos" replace />} />
+                  
+                  {/* RUTA PARA DOCUMENTOS */}
+                  <Route path="documentos" element={<ConfiguracionSistema />} />
+                  
+                  {/* RUTA PARA FORMULARIOS (Usando su componente propio) */}
+                  <Route path="formularios" element={<FormulariosDinamicos />} />
+                </Route>
               </Route>
             </Route>
 
-            {/* CAMPESINO: SOLO CAMPESINO */}
+            {/* SECCIÓN CAMPESINO */}
             <Route element={<RutaConRol rolesPermitidos={["CAMPESINO"]} />}>
               <Route path="/campesino" element={<ContenedorPagina notificaciones={notificaciones} />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -78,7 +85,7 @@ function App() {
 
           </Route>
 
-          {/* REDIRECCIONES */}
+          {/* 3. MANEJO DE RUTAS NO ENCONTRADAS */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
