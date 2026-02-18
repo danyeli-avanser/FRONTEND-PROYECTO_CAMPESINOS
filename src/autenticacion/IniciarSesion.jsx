@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { login as loginApi } from "../api/auth";
+// IMPORTACIÓN DE LA IMAGEN AÑADIDA
+import logoSena from '../assets/logoSena.png';
 
 const IniciarSesion = () => {
   const [identificacion, setIdentificacion] = useState("");
@@ -27,14 +29,11 @@ const IniciarSesion = () => {
       });
 
       // ✅ Convención ÚNICA (web y móvil):
-      // - token_campesena = access
-      // - refresh = refresh
-      // - usuario = user
       localStorage.setItem("token_campesena", data.access);
       localStorage.setItem("refresh", data.refresh);
       localStorage.setItem("usuario", JSON.stringify(data.user));
 
-      // limpiar llaves viejas (evita bugs por desorden)
+      // limpiar llaves viejas
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
@@ -43,19 +42,12 @@ const IniciarSesion = () => {
       const role = data?.user?.role;
 
       if (role === "ADMIN") navigate("/admin/dashboard");
-      // temporal mientras no exista módulo gestor:
       else if (role === "GESTOR") navigate("/admin/dashboard");
-      // temporal mientras no exista módulo asociación:
       else if (role === "ASOCIACION") navigate("/campesino/dashboard");
       else navigate("/campesino/dashboard");
     } catch (err) {
       const detail = err?.response?.data?.detail;
-
-      // soporta string o lista
-      const msg = Array.isArray(detail)
-        ? detail[0]
-        : detail || "Credenciales inválidas.";
-
+      const msg = Array.isArray(detail) ? detail[0] : detail || "Credenciales inválidas.";
       setError(msg);
     } finally {
       setCargando(false);
@@ -66,8 +58,14 @@ const IniciarSesion = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
         <div className="bg-[#052e16] p-8 text-center">
-          <div className="w-16 h-16 bg-white rounded-xl mx-auto flex items-center justify-center mb-4">
-            <span className="text-[#052e16] text-3xl font-bold">S</span>
+          {/* DIV DEL LOGO ACTUALIZADO CON LA IMAGEN */}
+          <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-md overflow-hidden p-2">
+            <img 
+              src={logoSena} 
+              alt="Logo SENA" 
+              className="w-full h-full object-contain"
+              onError={(e) => { e.target.style.display = 'none'; }} 
+            />
           </div>
           <h2 className="text-white text-2xl font-bold italic">CampeSENA</h2>
           <p className="text-gray-300 text-sm mt-2">
