@@ -1,13 +1,18 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import React from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-const RutaProtegida = () => {
-  const isAuthenticated = localStorage.getItem('token_campesena'); 
+export default function RutaProtegida() {
+  const location = useLocation();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  const token = localStorage.getItem("token_campesena"); // ✅ ESTE ES EL IMPORTANTE
+  const userRaw = localStorage.getItem("usuario");
+  const user = userRaw ? JSON.parse(userRaw) : null;
+
+  // si no hay token -> login
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
-  
-  return <Outlet />;
-};
 
-export default RutaProtegida;
+  // si hay token pero no hay usuario, igual deja pasar (por MVP)
+  return <Outlet />;
+}

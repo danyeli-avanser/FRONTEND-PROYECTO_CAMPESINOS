@@ -1,108 +1,109 @@
-import React from 'react';
-import { Clock, CheckCircle, AlertCircle, FileText, Search } from 'lucide-react';
+// src/paginas/campesino/SeguimientoSolicitud.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { Search, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { listSolicitudes } from "../../api/solicitudes.api";
 
-const SeguimientoSolicitud = () => {
-  // Datos de ejemplo para las solicitudes del campesino
-  const solicitudes = [
-    {
-      id: "SOL-001",
-      finca: "La Esperanza",
-      fecha: "20/10/2025",
-      estado: "En Revisión",
-      color: "text-amber-500 bg-amber-50",
-      icono: <Clock size={16} />
-    },
-    {
-      id: "SOL-002",
-      finca: "El Recuerdo",
-      fecha: "15/09/2025",
-      estado: "Aprobado",
-      color: "text-[#39a900] bg-green-50",
-      icono: <CheckCircle size={16} />
-    }
-  ];
+const mapEstado = (st) =>
+  ({
+    BORRADOR: "Borrador",
+    REGISTRADA: "Registrada",
+    EN_REVISION: "En revisión",
+    EN_AJUSTES: "En ajustes",
+    VALIDADA: "Validada",
+    VALIDADA_PARA_ENVIO: "Validada para envío",
+  }[st] || st);
+
+export default function SeguimientoSolicitud() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [rows, setRows] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      setError("");
+      setLoading(true);
+      try {
+        const res = await listSolicitudes({ page: 1, mias: true });
+        setRows(res?.results || []);
+      } catch (e) {
+        setError(e?.response?.data?.detail || "No se pudieron cargar tus solicitudes.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const filtradas = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => {
+      const id = String(r.id ?? "").toLowerCase();
+      const tipo = String(r.request_type ?? "").toLowerCase();
+      const estado = String(r.status ?? "").toLowerCase();
+      return id.includes(q) || tipo.includes(q) || estado.includes(q);
+    });
+  }, [rows, busqueda]);
 
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <div className="flex justify-between items-center border-b pb-4">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Mis Solicitudes</h1>
-          <p className="text-sm text-gray-500">Consulta el estado de tus trámites en tiempo real</p>
+          <p className="text-gray-500 text-sm">Seguimiento en tiempo real</p>
         </div>
-        <div className="bg-white border rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-sm">
+
+        <div className="flex items-center gap-2 border rounded-xl px-3 py-2 bg-white">
           <Search size={18} className="text-gray-400" />
-          <input type="text" placeholder="Buscar por ID..." className="outline-none text-sm w-32" />
+          <input
+            className="outline-none text-sm w-64"
+            placeholder="Buscar por id, tipo o estado…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
         </div>
-      </div>
+      </header>
 
-      {/* Lista de Solicitudes */}
-      <div className="grid gap-4">
-        {solicitudes.map((sol) => (
-          <div key={sol.id} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${sol.color}`}>
-                  <FileText size={24} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-800">{sol.finca}</h3>
-                  <p className="text-xs text-gray-400 font-mono">{sol.id}</p>
-                  <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
-                    Registrada el: <span className="font-medium">{sol.fecha}</span>
-                  </p>
-                </div>
-              </div>
+      {loading && <div className="text-gray-500">Cargando…</div>}
+      {error && <div className="text-red-600">{error}</div>}
 
-              <div className="flex items-center gap-4">
-                <div className={`px-3 py-1 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${sol.color}`}>
-                  {sol.icono}
-                  {sol.estado}
-                </div>
-                <button className="text-sm font-bold text-[#39a900] hover:underline">
-                  Ver detalles
-                </button>
-              </div>
-
-            </div>
-
-            {/* Línea de tiempo simplificada (Solo aparece si está en revisión) */}
-            {sol.estado === "En Revisión" && (
-              <div className="mt-6 pt-4 border-t border-gray-50">
-                <div className="flex items-center justify-between max-w-md mx-auto relative">
-                  <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2 z-0"></div>
-                  
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-4 h-4 rounded-full bg-[#39a900]"></div>
-                    <span className="text-[10px] mt-1 font-bold">Recibido</span>
-                  </div>
-                  
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-4 h-4 rounded-full bg-amber-400 animate-pulse"></div>
-                    <span className="text-[10px] mt-1 font-bold text-amber-500">Evaluando</span>
-                  </div>
-
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-4 h-4 rounded-full bg-gray-200"></div>
-                    <span className="text-[10px] mt-1 font-bold text-gray-300">Respuesta</span>
-                  </div>
-                </div>
-              </div>
-            )}
+      {!loading && !error && (
+        <div className="bg-white border rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-semibold text-gray-500 bg-gray-50">
+            <div className="col-span-2">ID</div>
+            <div className="col-span-3">Tipo</div>
+            <div className="col-span-3">Estado</div>
+            <div className="col-span-3">Actualizada</div>
+            <div className="col-span-1 text-right">Ver</div>
           </div>
-        ))}
-      </div>
 
-      {/* Mensaje de ayuda */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3 items-start">
-        <AlertCircle className="text-blue-500 shrink-0" size={20} />
-        <p className="text-sm text-blue-700">
-          Si tu solicitud aparece como <strong>"Rechazada"</strong>, revisa los detalles para ver qué documentos debes corregir y vuelve a intentarlo.
-        </p>
-      </div>
+          {filtradas.length === 0 ? (
+            <div className="p-4 text-gray-500">No tienes solicitudes aún.</div>
+          ) : (
+            filtradas.map((r) => (
+              <div key={r.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-t text-sm items-center">
+                <div className="col-span-2 font-semibold">#{r.id}</div>
+                <div className="col-span-3">{r.request_type}</div>
+                <div className="col-span-3">{mapEstado(r.status)}</div>
+                <div className="col-span-3">
+                  {r.updated_at ? new Date(r.updated_at).toLocaleString() : "-"}
+                </div>
+                <div className="col-span-1 text-right">
+                  <button
+                    className="inline-flex items-center gap-2 text-[#39a900] font-bold hover:underline"
+                    onClick={() => navigate(`/campesino/solicitudes/${r.id}`)}
+                    title="Ver detalle"
+                  >
+                    <Eye size={18} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
-};
-
-export default SeguimientoSolicitud;
+}
